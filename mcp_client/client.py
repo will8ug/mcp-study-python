@@ -12,7 +12,6 @@ load_dotenv()
 
 class MCPClient:
     def __init__(self):
-        self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
         self.client = OpenAI(
             api_key=os.getenv("DEEPSEEK_API_KEY"),
@@ -21,7 +20,7 @@ class MCPClient:
         self.sessions = {}
         self.messages = []
 
-        with open("MCP_Prompt.txt", "r", encoding="utf-8") as f:
+        with open("mcp_client/MCP_Prompt.txt", "r", encoding="utf-8") as f:
             self.system_prompt = f.read()
 
     async def connect_to_stdio_server(self, server_name: str, server_script_path: str):
@@ -40,13 +39,14 @@ class MCPClient:
         stdio_transport = await self.exit_stack.enter_async_context(
             stdio_client(server_params)
         )
-        self.stdio, self.write = stdio_transport
-        self.session = await self.exit_stack.enter_async_context(
-            ClientSession(self.stdio, self.write)
+        stdio, write = stdio_transport
+        session = await self.exit_stack.enter_async_context(
+            ClientSession(stdio, write)
         )
+        self.sessions[server_name] = session
 
-        await self.session.initialize()
-        response = await self.session.list_tools()
+        await session.initialize()
+        response = await session.list_tools()
         available_tools = ['##' + server_name + 
                            '\n### Available Tools\n- ' + tool.name + 
                            "\n" + tool.description + 
@@ -95,9 +95,7 @@ class MCPClient:
             arguments = params.get('arguments', {})
             server_name = params.get('server_name')
             
-            # If server_name is provided, we might need to route to the correct server
-            # For now, since we're connected to a single server, we'll use the current session
-            result = await self.session.call_tool(tool_name, arguments)
+            result = await self.sessions[server_name].call_tool(tool_name, arguments)
             
             # Handle different result formats
             if hasattr(result, 'content') and result.content:
@@ -181,7 +179,7 @@ class MCPClient:
 async def main():
     client = MCPClient()
     try:
-        await client.connect_to_stdio_server("weather", "../mcp_server/server.py")
+        await client.connect_to_stdio_server("weather", "mcp_server/server.py")
         await client.chat_loop()
     except Exception as e:
         print(f"Error: {e}")
