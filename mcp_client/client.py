@@ -6,6 +6,7 @@ from lxml import etree
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from mcp.client.sse import sse_client
 from openai import OpenAI
 
 load_dotenv()
@@ -20,7 +21,7 @@ class MCPClient:
         self.sessions = {}
         self.messages = []
 
-        with open("mcp_client/MCP_Prompt.txt", "r", encoding="utf-8") as f:
+        with open("MCP_Prompt.txt", "r", encoding="utf-8") as f:
             self.system_prompt = f.read()
 
     async def connect_to_stdio_server(self, server_name: str, server_script_path: str):
@@ -55,6 +56,28 @@ class MCPClient:
         self.system_prompt = self.system_prompt.replace("<$MCP_INFO$>", "\n".join(available_tools)+"\n<$MCP_INFO$>")
 
         print(f"Connected to MCP server: {server_name}")
+        print(f"Available tools: {response.tools}")
+
+    async def connect_to_sse_server(self, server_name: str, server_url: str):
+        """Connect to an SSE MCP server at the specified URL."""
+        sse, write = await self.exit_stack.enter_async_context(
+            sse_client(server_url)
+        )
+        session = await self.exit_stack.enter_async_context(
+            ClientSession(sse, write)
+        )
+        self.sessions[server_name] = session
+
+        await session.initialize()
+        response = await session.list_tools()
+        available_tools = ['##' + server_name + 
+                           '\n### Available Tools\n- ' + tool.name + 
+                           "\n" + tool.description + 
+                           "\n" + json.dumps(tool.inputSchema) 
+                           for tool in response.tools]
+        self.system_prompt = self.system_prompt.replace("<$MCP_INFO$>", "\n".join(available_tools)+"\n<$MCP_INFO$>")
+
+        print(f"Connected to MCP SSE server: {server_name}")
         print(f"Available tools: {response.tools}")
 
     def parse_tool_request(self, user_input: str) -> Optional[dict]:
@@ -179,7 +202,8 @@ class MCPClient:
 async def main():
     client = MCPClient()
     try:
-        await client.connect_to_stdio_server("weather", "mcp_server/server.py")
+        # await client.connect_to_stdio_server("weather", "mcp_server/server.py")
+        await client.connect_to_sse_server("weather", "http://localhost:8000/sse")
         await client.chat_loop()
     except Exception as e:
         print(f"Error: {e}")
