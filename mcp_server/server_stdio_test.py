@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from server import get_weather_tool, format_weather_data
+from server_stdio import get_weather_tool, format_weather_data
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ class TestWeatherFunctions:
         assert "0°C" in formatted      # For missing temperature
     
     @pytest.mark.asyncio
-    @patch('server.get_weather_from_openweathermap')
+    @patch('server_stdio.get_weather_from_openweathermap')
     async def test_get_weather_tool_success(self, mock_get_weather, mock_weather_response):
         """Test successful get_weather_tool call."""
         mock_get_weather.return_value = mock_weather_response
@@ -54,7 +54,7 @@ class TestWeatherFunctions:
         mock_get_weather.assert_called_once_with("London")
     
     @pytest.mark.asyncio
-    @patch('server.get_weather_from_openweathermap')
+    @patch('server_stdio.get_weather_from_openweathermap')
     async def test_get_weather_tool_error(self, mock_get_weather):
         """Test get_weather_tool with API error."""
         mock_get_weather.return_value = {"error": "API Error occurred"}
@@ -66,7 +66,7 @@ class TestWeatherFunctions:
         mock_get_weather.assert_called_once_with("InvalidCity")
     
     @pytest.mark.asyncio
-    @patch('server.get_weather_from_openweathermap')
+    @patch('server_stdio.get_weather_from_openweathermap')
     async def test_get_weather_tool_no_api_key(self, mock_get_weather):
         """Test get_weather_tool without API key."""
         mock_get_weather.return_value = {"error": "OpenWeatherMap API key not set. Please set the OPENWEATHER_API_KEY environment variable."}

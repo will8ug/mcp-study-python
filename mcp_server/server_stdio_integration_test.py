@@ -1,6 +1,6 @@
 import pytest
 import os
-from server import get_weather_tool
+from server_stdio import get_weather_tool
 
 
 class TestWeatherIntegration:
