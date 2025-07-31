@@ -3,7 +3,7 @@
 This project demonstrates basic usages of the Model Context Protocol (MCP) with a Python server and client.
 
 ## Structure
-- `mcp_server/`: MCP server exposing a weather tool (mocked response)
+- `mcp_server/`: MCP server exposing a weather tool
 - `mcp_client/`: MCP client with a CLI to ask weather questions
 
 ## Setup
@@ -16,18 +16,10 @@ This project demonstrates basic usages of the Model Context Protocol (MCP) with 
    ```
 
 ## Running the Server
-```sh
-python mcp_server/server.py
-```
+Refer to [Server README](mcp_server/README.md)
 
 ## Running the Client
 In a separate terminal (with the virtual environment activated):
-```sh
-python mcp_client/client.py
-```
 
-## Usage
-- The client will prompt: `Enter a location to get the weather (or 'quit' to exit):`
-- Type a location (e.g., `London`) and press Enter.
-- The client will display a mocked weather forecast.
-- Type `quit` to exit. 
+Refer to [Client README](mcp_client/README.md)
+
